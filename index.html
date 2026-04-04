@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Track your strength training progress with visual plate calculators, strength level indicators, and persistent workout logging.">
+  <meta name="theme-color" content="#06070d">
+  <title>Fitness Tracker — Strength Training Log</title>
+  <link rel="stylesheet" href="css/styles.css?v=6">
+</head>
+<body>
+
+  <!-- Mobile Menu Toggle -->
+  <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">☰</button>
+
+  <div class="app-layout">
+
+    <!-- ======== Sidebar ======== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-icon">🏋️</div>
+          <div>
+            <div class="sidebar-logo-text">FitTrack</div>
+            <div class="sidebar-logo-sub">Strength Tracker</div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <!-- Populated by JS -->
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-weight-display">
+          <span>⚖️</span>
+          <span>Body weight:</span>
+          <span class="user-weight-value" id="user-weight-value">80 kg</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ======== Main Content ======== -->
+    <main class="main-content" id="app-content">
+      <!-- Rendered dynamically by JS -->
+    </main>
+
+  </div>
+
+  <!-- ======== Mobile Bottom Nav ======== -->
+  <nav class="mobile-nav" id="mobile-nav">
+    <div class="mobile-nav-items" id="mobile-nav-items">
+      <!-- Populated by JS -->
+    </div>
+  </nav>
+
+  <!-- ======== Scripts (loaded in dependency order) ======== -->
+  <script src="js/storage.js"></script>
+  <script src="js/standards.js"></script>
+  <script src="js/plateCalc.js"></script>
+  <script src="js/exerciseBase.js"></script>
+  <script src="js/modules/pullups.js"></script>
+  <script src="js/modules/pushups.js"></script>
+  <script src="js/modules/squats.js"></script>
+  <script src="js/modules/benchpress.js"></script>
+  <script src="js/modules/dips.js"></script>
+  <script src="js/modules/curls.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
