@@ -61,14 +61,14 @@ FitnessApp.DailyLog = (() => {
     let records = [];
 
     // Componentized renderer for each exercise entry
-    function createExerciseCard() {
-      const record = {
+    function createExerciseCard(existingRecord = null) {
+      const record = existingRecord || {
         exerciseId: 'pullups', // Default first item
         sets: [{reps: '', weight: ''}],
         isWeighted: false,
         calcController: null
       };
-      records.push(record);
+      if (!existingRecord) records.push(record);
 
       const recordCard = document.createElement('div');
       recordCard.className = 'card';
@@ -223,8 +223,13 @@ FitnessApp.DailyLog = (() => {
             initialTot = parseFloat(record.sets[0].weight);
           }
 
-          record.calcController = FitnessApp.PlateCalc.render(pcContainer, config.barWeight || 20, (tot) => {
-             // Push weight to all sets in memory
+          let skipFirstNotify = true;
+          record.calcController = FitnessApp.PlateCalc.render(pcContainer, config.id, (tot) => {
+             if (skipFirstNotify) {
+               skipFirstNotify = false;
+               return; // Prevent wiping diverse loaded set weights
+             }
+             // Push weight to all sets in memory on manual plate clicks
              record.sets.forEach((s) => { s.weight = tot; });
              // Dynamically update existing inputs so we don't lose focus or re-render
              const weightInputs = setsListEl.querySelectorAll('.set-weight');
@@ -253,8 +258,48 @@ FitnessApp.DailyLog = (() => {
       if (empty) empty.remove();
     }
 
+    function loadDateData(dateStr) {
+      records = [];
+      exercisesContainer.innerHTML = '';
+      
+      let loadedCount = 0;
+      EXERCISES.forEach(ex => {
+         const todayLogs = FitnessApp.Storage.getHistory(ex).filter(h => h.date === dateStr);
+         // For each log entry of this exercise on this day
+         todayLogs.forEach(entry => {
+            const newRec = {
+               exerciseId: ex,
+               sets: entry.sets.map(s => ({ reps: s.reps||'', weight: s.weight||'' })),
+               isWeighted: !!entry.weighted,
+               calcController: null
+            };
+            records.push(newRec);
+            createExerciseCard(newRec);
+            loadedCount++;
+         });
+      });
+
+      // Load specific weight for date
+      const wHist = FitnessApp.Storage.getWeightHistory();
+      const weightEntry = wHist.find(w => w.date === dateStr);
+      if (weightEntry) {
+         document.getElementById('daily-weight').value = weightEntry.weight;
+      } else {
+         document.getElementById('daily-weight').value = settings.bodyweight;
+      }
+
+      if (loadedCount === 0) {
+        showEmptyState();
+      }
+    }
+
     // Initialize logic
-    addActions.querySelector('#btn-add-exercise').addEventListener('click', createExerciseCard);
+    addActions.querySelector('#btn-add-exercise').addEventListener('click', () => createExerciseCard(null));
+
+    const dateInput = document.getElementById('daily-date');
+    dateInput.addEventListener('change', (e) => {
+       loadDateData(e.target.value);
+    });
 
     saveRow.querySelector('button').addEventListener('click', () => {
       const date = document.getElementById('daily-date').value;
@@ -278,15 +323,21 @@ FitnessApp.DailyLog = (() => {
         }
       }
 
-      if (parsedRecords.length === 0) {
-        FitnessApp.showToast('Please add at least one exercise with valid sets.', 'error');
-        return;
-      }
-
       // 1. Save body weight
       FitnessApp.Storage.addWeight(date, weight);
 
-      // 2. Save exercises
+      // WIPE existing data for this date off the history to support safe Overwriting.
+      EXERCISES.forEach(ex => {
+        const hist = FitnessApp.Storage.getHistory(ex);
+        // Loop backwards to splice safely
+        for (let i = hist.length - 1; i >= 0; i--) {
+          if (hist[i].date === date) {
+            FitnessApp.Storage.deleteWorkout(ex, i);
+          }
+        }
+      });
+
+      // 2. Save NEW exercises array
       parsedRecords.forEach(rec => {
         let best1RM = 0;
         let bestLevel = null;
@@ -320,15 +371,14 @@ FitnessApp.DailyLog = (() => {
 
       FitnessApp.showToast('🎉 Daily Log Saved!', 'success');
       
-      // Reset
-      records = [];
-      exercisesContainer.innerHTML = '';
-      showEmptyState();
+      // Update sidebar states / stats just in case! 
+      if (window.FitnessApp.navigate) {
+         window.FitnessApp.navigate('daily-log');
+      }
     });
 
-    if (records.length === 0) {
-      showEmptyState();
-    }
+    // Load initial data
+    loadDateData(FitnessApp.Storage.todayStr());
   }
 
   return { render };

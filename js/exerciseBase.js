@@ -209,7 +209,7 @@ FitnessApp.ExerciseBase = (() => {
     if (config.type === 'barbell' && plateCalcContainer) {
       plateCalcController = FitnessApp.PlateCalc.render(
         plateCalcContainer,
-        config.barWeight || 20,
+        config.id,
         (totalWeight) => {
           // Sync plate calc weight to all set weight inputs
           const weightInputs = setsListEl.querySelectorAll('.set-weight');

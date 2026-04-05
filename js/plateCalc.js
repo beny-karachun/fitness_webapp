@@ -34,24 +34,74 @@ FitnessApp.PlateCalc = (() => {
     0.25: { w: 5,  h: 26 },
   };
 
+  const BAR_OPTIONS = [5, 7.5, 10, 12, 15, 20, 22.5, 25, 30];
+
   /**
    * Render a plate calculator into a container
    * @param {HTMLElement} container
-   * @param {number} barWeight - Weight of the bar in kg (20 for Olympic, 10 for EZ curl)
+   * @param {string} exerciseId - ID of the exercise to track bar weight preference
    * @param {function} onWeightChange - Callback with total weight
    * @param {number} initialWeight - Optional initial total weight to set
    * @returns {object} Controller with getWeight(), setWeight(), reset()
    */
-  function render(container, barWeight, onWeightChange, initialWeight) {
+  function render(container, exerciseId, onWeightChange, initialWeight) {
     let platesOnBar = []; // plates on ONE side (mirrored)
+    
+    // Load persisted settings
+    const settings = FitnessApp.Storage.getSettings();
+    if (!settings.barWeights) settings.barWeights = {};
+    
+    let baseConfigWeight = 20;
+    if (FitnessApp.Modules[exerciseId]) baseConfigWeight = FitnessApp.Modules[exerciseId].barWeight || 20;
+    
+    let barWeight = settings.barWeights[exerciseId] || baseConfigWeight;
 
     container.innerHTML = '';
     container.className = 'plate-calculator';
 
-    // Title
+    // Title and Bar Selector
     const title = document.createElement('div');
     title.className = 'plate-calc-title';
-    title.innerHTML = `<span>🏋️</span> Plate Calculator <span style="color:var(--text-muted);font-weight:400;font-size:12px;">(Bar: ${barWeight}kg)</span>`;
+    title.style.display = 'flex';
+    title.style.justifyContent = 'space-between';
+    title.style.alignItems = 'center';
+    
+    const titleSpan = document.createElement('span');
+    titleSpan.innerHTML = `<span>🏋️</span> Plate Calculator`;
+    
+    const barSelectorWrapper = document.createElement('div');
+    barSelectorWrapper.style.display = 'flex';
+    barSelectorWrapper.style.alignItems = 'center';
+    barSelectorWrapper.style.gap = '8px';
+    barSelectorWrapper.innerHTML = `<span style="color:var(--text-muted);font-weight:400;font-size:12px;">Bar:</span>`;
+    
+    const barSelect = document.createElement('select');
+    barSelect.className = 'form-input';
+    barSelect.style.width = '80px';
+    barSelect.style.padding = '4px 8px';
+    barSelect.style.height = 'auto';
+    barSelect.style.fontSize = '12px';
+    barSelect.style.background = 'var(--bg-secondary)';
+    
+    BAR_OPTIONS.forEach(kg => {
+       const opt = document.createElement('option');
+       opt.value = kg;
+       opt.textContent = `${kg}kg`;
+       if (kg === barWeight) opt.selected = true;
+       barSelect.appendChild(opt);
+    });
+    
+    barSelect.addEventListener('change', (e) => {
+       barWeight = parseFloat(e.target.value);
+       settings.barWeights[exerciseId] = barWeight;
+       FitnessApp.Storage.setSettings(settings);
+       _render();
+       _notify();
+    });
+    
+    barSelectorWrapper.appendChild(barSelect);
+    title.appendChild(titleSpan);
+    title.appendChild(barSelectorWrapper);
     container.appendChild(title);
 
     // Barbell visual

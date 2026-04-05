@@ -8,7 +8,7 @@ window.FitnessApp = window.FitnessApp || {};
   const EXERCISES = ['pullups', 'pushups', 'squats', 'benchpress', 'dips', 'curls'];
   const PAGES = ['dashboard', 'graphs', 'daily-log', ...EXERCISES, 'settings'];
 
-  let currentPage = 'dashboard';
+  let currentPage = 'daily-log';
 
   // ---- Init ----
   function init() {
@@ -16,7 +16,7 @@ window.FitnessApp = window.FitnessApp || {};
     _renderNav();
     _renderMobileNav();
     _setupMenuToggle();
-    navigate('dashboard');
+    navigate(currentPage);
   }
 
   // ---- Navigation ----
@@ -61,7 +61,7 @@ window.FitnessApp = window.FitnessApp || {};
     let html = '';
 
     // Dashboard
-    html += `<div class="nav-item active" data-page="dashboard">
+    html += `<div class="nav-item" data-page="dashboard">
       <span class="nav-item-icon">📊</span>
       <span class="nav-item-label">Dashboard</span>
     </div>`;
@@ -71,7 +71,7 @@ window.FitnessApp = window.FitnessApp || {};
       <span class="nav-item-label">Progress Graphs</span>
     </div>`;
 
-    html += `<div class="nav-item" data-page="daily-log">
+    html += `<div class="nav-item active" data-page="daily-log">
       <span class="nav-item-icon">📝</span>
       <span class="nav-item-label">Log Daily Workout</span>
     </div>`;
@@ -109,7 +109,7 @@ window.FitnessApp = window.FitnessApp || {};
     const mobileNav = document.getElementById('mobile-nav-items');
     if (!mobileNav) return;
 
-    let html = `<div class="mobile-nav-item active" data-page="dashboard">
+    let html = `<div class="mobile-nav-item" data-page="dashboard">
       <span class="mobile-nav-item-icon">📊</span>
       <span class="mobile-nav-item-label">Home</span>
     </div>`;
@@ -119,7 +119,7 @@ window.FitnessApp = window.FitnessApp || {};
       <span class="mobile-nav-item-label">Graphs</span>
     </div>`;
 
-    html += `<div class="mobile-nav-item" data-page="daily-log">
+    html += `<div class="mobile-nav-item active" data-page="daily-log">
       <span class="mobile-nav-item-icon">📝</span>
       <span class="mobile-nav-item-label">Log</span>
     </div>`;
