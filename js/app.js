@@ -6,7 +6,7 @@ window.FitnessApp = window.FitnessApp || {};
 (function() {
   // Exercise module registry (order = nav order)
   const EXERCISES = ['pullups', 'pushups', 'squats', 'benchpress', 'dips', 'curls'];
-  const PAGES = ['dashboard', ...EXERCISES, 'settings'];
+  const PAGES = ['dashboard', 'daily-log', ...EXERCISES, 'settings'];
 
   let currentPage = 'dashboard';
 
@@ -36,6 +36,8 @@ window.FitnessApp = window.FitnessApp || {};
     // Render page
     if (page === 'dashboard') {
       _renderDashboard(content);
+    } else if (page === 'daily-log') {
+      if (FitnessApp.DailyLog) FitnessApp.DailyLog.render(content);
     } else if (page === 'settings') {
       _renderSettings(content);
     } else if (FitnessApp.Modules[page]) {
@@ -60,6 +62,11 @@ window.FitnessApp = window.FitnessApp || {};
     html += `<div class="nav-item active" data-page="dashboard">
       <span class="nav-item-icon">📊</span>
       <span class="nav-item-label">Dashboard</span>
+    </div>`;
+
+    html += `<div class="nav-item" data-page="daily-log">
+      <span class="nav-item-icon">📝</span>
+      <span class="nav-item-label">Log Daily Workout</span>
     </div>`;
 
     html += `<div class="nav-section-title">Exercises</div>`;
@@ -99,6 +106,11 @@ window.FitnessApp = window.FitnessApp || {};
     let html = `<div class="mobile-nav-item active" data-page="dashboard">
       <span class="mobile-nav-item-icon">📊</span>
       <span class="mobile-nav-item-label">Home</span>
+    </div>`;
+
+    html += `<div class="mobile-nav-item" data-page="daily-log">
+      <span class="mobile-nav-item-icon">📝</span>
+      <span class="mobile-nav-item-label">Log</span>
     </div>`;
 
     EXERCISES.forEach(id => {

@@ -61,6 +61,38 @@ FitnessApp.Storage = (() => {
     set('history_' + exerciseId, history);
   }
 
+  // --- Weight History ---
+  function getWeightHistory() {
+    return get('history_weight', []);
+  }
+
+  function addWeight(date, weight) {
+    const history = getWeightHistory();
+    const entry = { date, weight: parseFloat(weight), timestamp: Date.now() };
+    
+    // remove existing entry for same date
+    const existingIdx = history.findIndex(h => h.date === date);
+    if (existingIdx !== -1) history.splice(existingIdx, 1);
+    
+    history.push(entry);
+    // Sort descending by date
+    history.sort((a, b) => b.date.localeCompare(a.date));
+    set('history_weight', history);
+
+    // If this is the latest date, update settings.bodyweight
+    if (history[0].date === date) {
+      const settings = getSettings();
+      settings.bodyweight = entry.weight;
+      setSettings(settings);
+    }
+  }
+
+  function deleteWeight(index) {
+    const history = getWeightHistory();
+    history.splice(index, 1);
+    set('history_weight', history);
+  }
+
   function getLatestWorkout(exerciseId) {
     const history = getHistory(exerciseId);
     return history.length > 0 ? history[0] : null;
@@ -111,6 +143,7 @@ FitnessApp.Storage = (() => {
     get, set, remove,
     getSettings, setSettings,
     getHistory, addWorkout, deleteWorkout,
+    getWeightHistory, addWeight, deleteWeight,
     getLatestWorkout, getTodaysWorkouts, getAllTodaysWorkouts,
     getWorkoutDates, clearAllData,
     todayStr: _todayStr
