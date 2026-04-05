@@ -6,7 +6,7 @@ window.FitnessApp = window.FitnessApp || {};
 (function() {
   // Exercise module registry (order = nav order)
   const EXERCISES = ['pullups', 'pushups', 'squats', 'benchpress', 'dips', 'curls'];
-  const PAGES = ['dashboard', 'daily-log', ...EXERCISES, 'settings'];
+  const PAGES = ['dashboard', 'graphs', 'daily-log', ...EXERCISES, 'settings'];
 
   let currentPage = 'dashboard';
 
@@ -36,6 +36,8 @@ window.FitnessApp = window.FitnessApp || {};
     // Render page
     if (page === 'dashboard') {
       _renderDashboard(content);
+    } else if (page === 'graphs') {
+      if (FitnessApp.Graphs) FitnessApp.Graphs.render(content);
     } else if (page === 'daily-log') {
       if (FitnessApp.DailyLog) FitnessApp.DailyLog.render(content);
     } else if (page === 'settings') {
@@ -64,6 +66,11 @@ window.FitnessApp = window.FitnessApp || {};
       <span class="nav-item-label">Dashboard</span>
     </div>`;
 
+    html += `<div class="nav-item" data-page="graphs">
+      <span class="nav-item-icon">📉</span>
+      <span class="nav-item-label">Progress Graphs</span>
+    </div>`;
+
     html += `<div class="nav-item" data-page="daily-log">
       <span class="nav-item-icon">📝</span>
       <span class="nav-item-label">Log Daily Workout</span>
@@ -77,7 +84,6 @@ window.FitnessApp = window.FitnessApp || {};
       html += `<div class="nav-item" data-page="${id}">
         <span class="nav-item-icon">${mod.icon}</span>
         <span class="nav-item-label">${mod.name}</span>
-        <span class="nav-item-badge difficulty-badge ${mod.difficulty}">${mod.difficulty.charAt(0).toUpperCase() + mod.difficulty.slice(1)}</span>
       </div>`;
     });
 
@@ -106,6 +112,11 @@ window.FitnessApp = window.FitnessApp || {};
     let html = `<div class="mobile-nav-item active" data-page="dashboard">
       <span class="mobile-nav-item-icon">📊</span>
       <span class="mobile-nav-item-label">Home</span>
+    </div>`;
+
+    html += `<div class="mobile-nav-item" data-page="graphs">
+      <span class="mobile-nav-item-icon">📉</span>
+      <span class="mobile-nav-item-label">Graphs</span>
     </div>`;
 
     html += `<div class="mobile-nav-item" data-page="daily-log">
@@ -204,11 +215,6 @@ window.FitnessApp = window.FitnessApp || {};
       </div>
     `;
     container.appendChild(todaySection);
-
-    // Insights section (Charts)
-    const insightsSection = document.createElement('div');
-    insightsSection.id = 'dashboard-insights';
-    container.appendChild(insightsSection);
 
     // Weekly calendar
     const weekCalendar = _renderWeeklyCalendar();

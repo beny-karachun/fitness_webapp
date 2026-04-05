@@ -465,9 +465,11 @@ FitnessApp.ExerciseBase = (() => {
 
         entryDiv.querySelector('.history-delete-btn').addEventListener('click', (e) => {
           const idx = parseInt(e.currentTarget.dataset.idx);
-          if (confirm('Delete this workout entry?')) {
-            FitnessApp.Storage.deleteWorkout(config.id, idx);
-            // Re-render
+          FitnessApp.Storage.deleteWorkout(config.id, idx);
+          // Fully re-render page so statistics and history update everywhere
+          if (window.FitnessApp.navigate) {
+            window.FitnessApp.navigate(config.id);
+          } else {
             const mainContent = document.getElementById('app-content');
             if (mainContent) render(mainContent, config);
           }
