@@ -5,8 +5,12 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-/* ---------- CSS Custom Properties ---------- */
+html {
+  color-scheme: dark;
+}
+
 :root {
+  color-scheme: dark;
   /* Colors */
   --bg-primary: #06070d;
   --bg-secondary: #0d0f1a;
@@ -898,6 +902,16 @@ body::before {
 .form-input::placeholder {
   color: var(--text-muted);
   font-weight: 400;
+}
+
+select.form-input {
+  color-scheme: dark;
+}
+
+select.form-input option {
+  background-color: #0d0f1a !important;
+  color: #e2e8f0 !important;
+  padding: 8px;
 }
 
 /* Toggle switch (weighted) */

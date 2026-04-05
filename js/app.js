@@ -205,6 +205,11 @@ window.FitnessApp = window.FitnessApp || {};
     `;
     container.appendChild(todaySection);
 
+    // Insights section (Charts)
+    const insightsSection = document.createElement('div');
+    insightsSection.id = 'dashboard-insights';
+    container.appendChild(insightsSection);
+
     // Weekly calendar
     const weekCalendar = _renderWeeklyCalendar();
     container.appendChild(weekCalendar);
