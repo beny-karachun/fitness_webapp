@@ -337,6 +337,32 @@ FitnessApp.ExerciseBase = (() => {
       }
     }
 
+    // Calculate cumulative stats across all history
+    let totalReps = 0;
+    let totalSets = 0;
+    let totalVolume = 0; // total kg lifted (reps × weight)
+    let bestMaxReps = 0; // best single-set reps ever
+    let bestMaxWeight = 0; // heaviest weight ever used
+    history.forEach(entry => {
+      entry.sets.forEach(s => {
+        const reps = parseInt(s.reps) || 0;
+        const weight = parseFloat(s.weight) || 0;
+        totalReps += reps;
+        totalSets++;
+        if (weight > 0) {
+          totalVolume += reps * weight;
+        }
+        if (reps > bestMaxReps) bestMaxReps = reps;
+        if (weight > bestMaxWeight) bestMaxWeight = weight;
+      });
+    });
+
+    // Format large numbers
+    const fmtNum = (n) => n >= 10000 ? (n / 1000).toFixed(1) + 'k' : n.toLocaleString();
+    const fmtVol = (n) => n >= 10000 ? (n / 1000).toFixed(1) + 'k' : Math.round(n).toLocaleString();
+
+    const showVolume = config.type === 'barbell' || config.hasWeighted;
+
     // Get thresholds for display
     const isWeightedLatest = latest && latest.weighted;
     const thresholds = FitnessApp.Standards.getThresholds(
@@ -364,6 +390,39 @@ FitnessApp.ExerciseBase = (() => {
       <div style="margin-top:4px;font-size:12px;color:var(--text-muted);">
         Weight class: ${FitnessApp.Standards.getWeightClassLabel(settings.bodyweight)} • ${settings.gender === 'male' ? '♂ Male' : '♀ Female'} standards
       </div>
+
+      <div class="exercise-lifetime-stats" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-subtle);">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">All-Time Statistics</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:12px;">
+          <div style="text-align:center;padding:10px 6px;background:var(--bg-input);border-radius:8px;">
+            <div style="font-size:20px;font-weight:700;color:var(--accent-primary);">${fmtNum(totalReps)}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Total Reps</div>
+          </div>
+          <div style="text-align:center;padding:10px 6px;background:var(--bg-input);border-radius:8px;">
+            <div style="font-size:20px;font-weight:700;color:var(--accent-primary);">${fmtNum(totalSets)}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Total Sets</div>
+          </div>
+          ${showVolume ? `
+          <div style="text-align:center;padding:10px 6px;background:var(--bg-input);border-radius:8px;">
+            <div style="font-size:20px;font-weight:700;color:var(--accent-primary);">${fmtVol(totalVolume)}<span style="font-size:12px;font-weight:500;">kg</span></div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Total Volume</div>
+          </div>
+          <div style="text-align:center;padding:10px 6px;background:var(--bg-input);border-radius:8px;">
+            <div style="font-size:20px;font-weight:700;color:var(--accent-primary);">${bestMaxWeight}<span style="font-size:12px;font-weight:500;">kg</span></div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Max Weight</div>
+          </div>
+          ` : `
+          <div style="text-align:center;padding:10px 6px;background:var(--bg-input);border-radius:8px;">
+            <div style="font-size:20px;font-weight:700;color:var(--accent-primary);">${bestMaxReps}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Best Reps</div>
+          </div>
+          `}
+          <div style="text-align:center;padding:10px 6px;background:var(--bg-input);border-radius:8px;">
+            <div style="font-size:20px;font-weight:700;color:var(--accent-primary);">${history.length}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Sessions</div>
+          </div>
+        </div>
+      </div>
     `;
 
     // Mini progress chart
@@ -390,10 +449,8 @@ FitnessApp.ExerciseBase = (() => {
     if (config.type === 'barbell') {
       values = recent.map(e => e.e1rm || Math.max(...e.sets.map(s => s.weight)));
     } else {
-      values = recent.map(e => {
-        if (e.weighted) return Math.max(...e.sets.map(s => s.weight));
-        return Math.max(...e.sets.map(s => s.reps));
-      });
+      // Bodyweight exercises: always track best reps (never mix reps and kg)
+      values = recent.map(e => Math.max(...e.sets.map(s => s.reps)));
     }
 
     const maxVal = Math.max(...values, 1);
@@ -403,7 +460,7 @@ FitnessApp.ExerciseBase = (() => {
       bar.className = 'mini-chart-bar';
       const h = Math.max(4, (val / maxVal) * 70);
       bar.style.height = h + 'px';
-      bar.setAttribute('data-tooltip', `${recent[i].date}: ${val}${config.type === 'barbell' ? 'kg' : (recent[i].weighted ? 'kg' : ' reps')}`);
+      bar.setAttribute('data-tooltip', `${recent[i].date}: ${val}${config.type === 'barbell' ? 'kg' : ' reps'}`);
       chart.appendChild(bar);
     });
 
@@ -453,11 +510,28 @@ FitnessApp.ExerciseBase = (() => {
           return `<strong>${s.reps}</strong> reps`;
         }).join(', ');
 
+        // Calculate session totals
+        const sessionTotalReps = entry.sets.reduce((sum, s) => sum + (parseInt(s.reps) || 0), 0);
+        const sessionTotalVol = entry.sets.reduce((sum, s) => {
+          const r = parseInt(s.reps) || 0;
+          const w = parseFloat(s.weight) || 0;
+          return sum + (r * w);
+        }, 0);
+        const hasWeight = entry.sets.some(s => s.weight > 0);
+
         const levelBadge = entry.level ?
           `<span class="history-level-badge strength-current-value ${entry.level}">${FitnessApp.Standards.LEVEL_LABELS[entry.level] || entry.level}</span>` : '';
 
         entryDiv.innerHTML = `
           <div class="history-sets-summary">${setsText}</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin:4px 0;">
+            <span style="font-size:11px;color:var(--text-muted);background:var(--bg-input);padding:2px 8px;border-radius:4px;">
+              ${sessionTotalReps} reps total
+            </span>
+            ${hasWeight && sessionTotalVol > 0 ? `<span style="font-size:11px;color:var(--text-muted);background:var(--bg-input);padding:2px 8px;border-radius:4px;">
+              ${Math.round(sessionTotalVol)} kg volume
+            </span>` : ''}
+          </div>
           ${entry.e1rm ? `<div class="history-1rm">Est. 1RM: ${entry.e1rm}kg</div>` : ''}
           ${levelBadge}
           <button class="history-delete-btn" data-idx="${entry._index}" title="Delete entry">🗑</button>

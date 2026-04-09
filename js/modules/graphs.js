@@ -53,12 +53,19 @@ FitnessApp.Graphs = (() => {
     metricSelect.innerHTML = `
       <optgroup label="Global Metrics">
         <option value="bodyweight" ${currentMetric === 'bodyweight' ? 'selected' : ''}>Body Weight</option>
-        <option value="volume" ${currentMetric === 'volume' ? 'selected' : ''}>Total Daily Reps</option>
+        <option value="volume" ${currentMetric === 'volume' ? 'selected' : ''}>Total Daily Reps (All Exercises)</option>
+        <option value="volume_kg" ${currentMetric === 'volume_kg' ? 'selected' : ''}>Total Daily Volume (kg Lifted)</option>
       </optgroup>
-      <optgroup label="Exercise Performance">
+      <optgroup label="Exercise Performance (E1RM / Best)">
         ${EXERCISES.map(id => {
           const mod = FitnessApp.Modules[id];
-          return `<option value="${id}" ${currentMetric === id ? 'selected' : ''}>${mod.icon} ${mod.name} (E1RM / Best)</option>`;
+          return `<option value="${id}" ${currentMetric === id ? 'selected' : ''}>${mod.icon} ${mod.name}</option>`;
+        }).join('')}
+      </optgroup>
+      <optgroup label="Exercise Reps Over Time">
+        ${EXERCISES.map(id => {
+          const mod = FitnessApp.Modules[id];
+          return `<option value="reps_${id}" ${currentMetric === 'reps_' + id ? 'selected' : ''}>${mod.icon} ${mod.name} (Total Reps)</option>`;
         }).join('')}
       </optgroup>
     `;
@@ -167,8 +174,8 @@ FitnessApp.Graphs = (() => {
 
     } else if (currentMetric === 'volume') {
       isLine = false;
-      datasetLabel = 'Total Volume (Reps)';
-      yAxisSuffix = '';
+      datasetLabel = 'Total Daily Reps';
+      yAxisSuffix = ' reps';
 
       dataPoints = targetDates.map(date => {
         let dailyReps = 0;
@@ -181,12 +188,50 @@ FitnessApp.Graphs = (() => {
         return dailyReps;
       });
 
+    } else if (currentMetric === 'volume_kg') {
+      isLine = false;
+      datasetLabel = 'Total Daily Volume (kg)';
+      yAxisSuffix = ' kg';
+
+      dataPoints = targetDates.map(date => {
+        let dailyVol = 0;
+        EXERCISES.forEach(ex => {
+          const dayWorkouts = FitnessApp.Storage.getHistory(ex).filter(w => w.date === date);
+          dayWorkouts.forEach(workout => {
+            workout.sets.forEach(s => {
+              const reps = parseInt(s.reps) || 0;
+              const weight = parseFloat(s.weight) || 0;
+              dailyVol += reps * weight;
+            });
+          });
+        });
+        return dailyVol;
+      });
+
+    } else if (currentMetric.startsWith('reps_')) {
+      // Per-exercise total reps over time
+      const exId = currentMetric.replace('reps_', '');
+      const config = FitnessApp.Modules[exId];
+      isLine = false;
+      datasetLabel = config.name + ' — Total Reps';
+      yAxisSuffix = ' reps';
+
+      dataPoints = targetDates.map(date => {
+        let dayReps = 0;
+        const dayWorkouts = FitnessApp.Storage.getHistory(exId).filter(w => w.date === date);
+        dayWorkouts.forEach(workout => {
+          workout.sets.forEach(s => dayReps += (parseInt(s.reps) || 0));
+        });
+        return dayReps;
+      });
+
     } else {
-      // Specific exercise progress
+      // Specific exercise progress (E1RM / Best)
       const exId = currentMetric;
       const config = FitnessApp.Modules[exId];
       datasetLabel = config.name + ' Progression';
-      yAxisSuffix = config.type === 'barbell' || config.hasWeighted ? ' kg' : ' reps';
+      // Barbell exercises track kg (E1RM), bodyweight exercises ALWAYS track reps
+      yAxisSuffix = config.type === 'barbell' ? ' kg' : ' reps';
 
       const expHist = [...FitnessApp.Storage.getHistory(exId)].sort((a,b) => a.date.localeCompare(b.date));
 
@@ -202,11 +247,8 @@ FitnessApp.Graphs = (() => {
                     const e1rm = FitnessApp.Standards.estimate1RM(s.weight, s.reps);
                     if (e1rm > bestScore) bestScore = e1rm;
                  });
-              } else if (entry.weighted) {
-                 entry.sets.forEach(s => {
-                    if (s.weight > bestScore) bestScore = s.weight;
-                 });
               } else {
+                 // Bodyweight exercises: always track best reps (never treat reps as kg)
                  entry.sets.forEach(s => {
                     if (s.reps > bestScore) bestScore = s.reps;
                  });
@@ -284,7 +326,7 @@ FitnessApp.Graphs = (() => {
               font: { family: "'Inter', sans-serif", size: 11 },
               padding: 10
             },
-            beginAtZero: currentMetric === 'volume'
+            beginAtZero: !isLine
           }
         },
         interaction: { intersect: false, mode: 'index' }

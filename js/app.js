@@ -264,6 +264,27 @@ window.FitnessApp = window.FitnessApp || {};
         }
       }
 
+      // Calculate cumulative stats across all history
+      let totalReps = 0;
+      let totalSets = 0;
+      let totalVolume = 0; // total kg lifted (reps × weight)
+      history.forEach(entry => {
+        entry.sets.forEach(s => {
+          totalReps += (parseInt(s.reps) || 0);
+          totalSets++;
+          if (s.weight > 0) {
+            totalVolume += (parseInt(s.reps) || 0) * (parseFloat(s.weight) || 0);
+          }
+        });
+      });
+
+      // Format large numbers
+      const fmtNum = (n) => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n.toString();
+      const fmtVol = (n) => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : Math.round(n).toString();
+
+      // Decide whether to show volume (kg) — only for barbell or weighted exercises
+      const showVolume = mod.type === 'barbell' || mod.hasWeighted;
+
       const card = document.createElement('div');
       card.className = 'exercise-card';
       card.dataset.page = id;
@@ -280,6 +301,16 @@ window.FitnessApp = window.FitnessApp || {};
             <div class="exercise-card-stat-value">${statValue}</div>
             <div class="exercise-card-stat-label">${statLabel}</div>
           </div>
+          <div class="exercise-card-stat">
+            <div class="exercise-card-stat-value">${fmtNum(totalReps)}</div>
+            <div class="exercise-card-stat-label">Total Reps</div>
+          </div>
+          ${showVolume ? `
+          <div class="exercise-card-stat">
+            <div class="exercise-card-stat-value">${fmtVol(totalVolume)}kg</div>
+            <div class="exercise-card-stat-label">Volume</div>
+          </div>
+          ` : ''}
           <div class="exercise-card-stat">
             <div class="exercise-card-stat-value">${history.length}</div>
             <div class="exercise-card-stat-label">Sessions</div>
